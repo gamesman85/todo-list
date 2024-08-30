@@ -1,6 +1,6 @@
-"use client";                       
+"use client";
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -13,22 +13,38 @@ interface Todo {
 const TodoList: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [input, setInput] = useState<string>('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const storedTodos = localStorage.getItem('todos');
+    if (storedTodos) {
+      setTodos(JSON.parse(storedTodos));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('todos', JSON.stringify(todos));
+    }
+  }, [todos, isClient]);
 
   const addTodo = () => {
     if (input.trim() !== '') {
-      setTodos([...todos, { id: Date.now(), text: input.trim(), completed: false }]);
+      const newTodo = { id: Date.now(), text: input.trim(), completed: false };
+      setTodos(prevTodos => [...prevTodos, newTodo]);
       setInput('');
     }
   };
 
   const toggleTodo = (id: number) => {
-    setTodos(todos.map(todo =>
+    setTodos(prevTodos => prevTodos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     ));
   };
 
   const deleteTodo = (id: number) => {
-    setTodos(todos.filter(todo => todo.id !== id));
+    setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
   };
 
   return (
@@ -44,24 +60,26 @@ const TodoList: React.FC = () => {
         />
         <Button onClick={addTodo}>Add</Button>
       </div>
-      <ul>
-        {todos.map(todo => (
-          <li key={todo.id} className="flex items-center mb-2">
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => toggleTodo(todo.id)}
-              className="mr-2"
-            />
-            <span className={`flex-grow ${todo.completed ? 'line-through text-gray-500' : ''}`}>
-              {todo.text}
-            </span>
-            <Button onClick={() => deleteTodo(todo.id)} variant="destructive" size="sm">
-              Delete
-            </Button>
-          </li>
-        ))}
-      </ul>
+      {isClient && (
+        <ul>
+          {todos.map(todo => (
+            <li key={todo.id} className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                checked={todo.completed}
+                onChange={() => toggleTodo(todo.id)}
+                className="mr-2"
+              />
+              <span className={`flex-grow ${todo.completed ? 'line-through text-gray-500' : ''}`}>
+                {todo.text}
+              </span>
+              <Button onClick={() => deleteTodo(todo.id)} variant="destructive" size="sm">
+                Delete
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
